@@ -12,15 +12,14 @@ int slow_get_page(int page) {
 }
 
 int main() {
-  int    hits = 0;
-  int    number_requests;
-  size_t cache_size;
+  int    hits{};
+  size_t number_requests{}, cache_size{};
 
   std::cin >> number_requests >> cache_size;
   assert(std::cin.good());
   caches::cache_t<int> cache{cache_size};
 
-  for (int i = 0; i < number_requests; ++i) {
+  for (unsigned i = 0; i < number_requests; ++i) {
     int key;
     std::cin >> key;
     assert(std::cin.good());

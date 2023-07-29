@@ -12,7 +12,7 @@ template <typename KeyT, typename T> struct node_t {
 
   node_t(KeyT p_key, T p_val) : m_key{p_key}, m_value{p_val} {}
 };
-// TODO: переделать алгоритм под тип node_t, выделить отдельные функции. Написать документацию
+// Написать документацию
 template <typename KeyT, typename T> class cache_t {
   size_t size_;
 
@@ -20,7 +20,7 @@ template <typename KeyT, typename T> class cache_t {
   using ListIt = typename std::list<node_t__>::iterator;
   using FIFOIt = typename std::list<node_t__ *>::iterator;
 
-  std::list<node_t__>   am_; // чтобы не было петли
+  std::list<node_t__>   am_;
   std::list<node_t__>   a1_; // max_size = 1/4 * size_
   std::list<node_t__ *> a2_; // max_size = 1/2 * size_
 
@@ -40,11 +40,11 @@ template <typename KeyT, typename T> class cache_t {
   void reclaimForFIFOout(const KeyT &key) {
     auto eltit = a2_hash_.find(key);
     if (isFullCache()) {
-      hash_.erase(am_.back().first);
+      am_hash_.erase(am_.back().m_key);
       am_.pop_back();
     }
     am_.emplace_front(**eltit);
-    hash_.emplace(key, am_.begin());
+    am_hash_.emplace(key, am_.begin());
     a2_hash_.erase(key);
     a2_.erase(eltit);
   }
@@ -52,15 +52,15 @@ template <typename KeyT, typename T> class cache_t {
     if (isFullFIFOin()) {
       auto page = a1_.back();
       if (isFullFIFOout()) {
-        a2_hash_.erase(a2_.back().first);
+        a2_hash_.erase(a2_.back().m_key);
         a2_.pop_back();
       }
       a2_.emplace_front(&page);
-      a2_hash_.emplace(page.first, a2_.begin());
-      a1_hash_.erase(page.first);
+      a2_hash_.emplace(page.m_key, a2_.begin());
+      a1_hash_.erase(page.m_key);
       a1_.pop_back();
     }
-    a1_.emplace_front(key, slow_get_page(key));
+    a1_.emplace_front(key, slow_get_page);
     a1_hash_.emplace(key, a1_.begin());
   }
 
@@ -81,7 +81,7 @@ public:
       reclaimForFIFOout(key);
       return true;
     } else {
-      reclaimForFIFOin(key); // slow_get_page?
+      reclaimForFIFOin(key, slow_get_page); // slow_get_page?
       return false;
     }
   }
