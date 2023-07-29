@@ -12,25 +12,25 @@ template <typename KeyT, typename T> struct node_t {
 
   node_t(KeyT p_key, T p_val) : m_key{p_key}, m_value{p_val} {}
 };
-// Написать документацию
+// TODO: Написать документацию
 template <typename KeyT, typename T> class cache_t {
   size_t size_;
 
   using node_t__ = node_t<KeyT, T>;
   using ListIt = typename std::list<node_t__>::iterator;
   using FIFOIt = typename std::list<node_t__ *>::iterator;
-
-  std::list<node_t__>   am_;
+  // TODO: что если size_ < 4?
+  std::list<node_t__>   am_; // max_size = 1/2 * size_
   std::list<node_t__>   a1_; // max_size = 1/4 * size_
-  std::list<node_t__ *> a2_; // max_size = 1/2 * size_
+  std::list<node_t__ *> a2_; // max_size = 1/4 * size_
 
   std::unordered_map<KeyT, ListIt> am_hash_;
   std::unordered_map<KeyT, ListIt> a1_hash_;
   std::unordered_map<KeyT, FIFOIt> a2_hash_;
 
-  bool isFullCache() const { return (am_.size() == size_); }
+  bool isFullCache() const { return (am_.size() == size_ / 2); }
   bool isFullFIFOin() const { return (a1_.size() == size_ / 4); }
-  bool isFullFIFOout() const { return (a2_.size() == size_ / 2); }
+  bool isFullFIFOout() const { return (a2_.size() == size_ / 4); }
 
   void spliceUpfront(const KeyT &key) {
     auto eltit = am_hash_.find(key);
@@ -48,7 +48,7 @@ template <typename KeyT, typename T> class cache_t {
     a2_hash_.erase(key);
     a2_.erase(eltit);
   }
-  template <typename F> void reclaimForFIFOin(const KeyT &key, F slow_get_page) {
+  template <typename F> void reclaimForFIFOin(const KeyT &key, F &slow_get_page) {
     if (isFullFIFOin()) {
       auto page = a1_.back();
       if (isFullFIFOout()) {
@@ -60,7 +60,7 @@ template <typename KeyT, typename T> class cache_t {
       a1_hash_.erase(page.m_key);
       a1_.pop_back();
     }
-    a1_.emplace_front(key, slow_get_page);
+    a1_.emplace_front(key, slow_get_page(key));
     a1_hash_.emplace(key, a1_.begin());
   }
 
@@ -81,7 +81,7 @@ public:
       reclaimForFIFOout(key);
       return true;
     } else {
-      reclaimForFIFOin(key, slow_get_page); // slow_get_page?
+      reclaimForFIFOin(key, slow_get_page);
       return false;
     }
   }
