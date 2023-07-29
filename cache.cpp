@@ -19,6 +19,7 @@ int main() {
   std::cin >> number_requests >> cache_size;
   assert(std::cin.good());
   caches::cache_t<int> cache{cache_size};
+
   for (int i = 0; i < number_requests; ++i) {
     int key;
     std::cin >> key;
