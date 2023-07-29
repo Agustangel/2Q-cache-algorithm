@@ -4,13 +4,17 @@
 #include <list>
 #include <unordered_map>
 
-namespace cache {
+namespace caches {
+
+#define CACHE_MIN_SIZE 4
 
 template <typename KeyT, typename T> struct node_t {
   KeyT m_key;
   T    m_value;
+  T   *m_ptr;
 
   node_t(KeyT p_key, T p_val) : m_key{p_key}, m_value{p_val} {}
+  node_t(KeyT p_key, T *p_ptr = nullptr) : m_key{p_key}, m_ptr{p_ptr} {}
 };
 // TODO: Написать документацию
 template <typename KeyT, typename T> class cache_t {
@@ -18,46 +22,51 @@ template <typename KeyT, typename T> class cache_t {
 
   using node_t__ = node_t<KeyT, T>;
   using ListIt = typename std::list<node_t__>::iterator;
-  using FIFOIt = typename std::list<node_t__ *>::iterator;
+
   // TODO: что если size_ < 4?
-  std::list<node_t__>   am_; // max_size = 1/2 * size_
-  std::list<node_t__>   a1_; // max_size = 1/4 * size_
-  std::list<node_t__ *> a2_; // max_size = 1/4 * size_
+  std::list<node_t__> am_; // max_size = 1/2 * size_
+  std::list<node_t__> a1_; // max_size = 1/4 * size_
+  std::list<node_t__> a2_; // max_size = 1/4 * size_
 
   std::unordered_map<KeyT, ListIt> am_hash_;
   std::unordered_map<KeyT, ListIt> a1_hash_;
-  std::unordered_map<KeyT, FIFOIt> a2_hash_;
+  std::unordered_map<KeyT, ListIt> a2_hash_;
 
   bool isFullCache() const { return (am_.size() == size_ / 2); }
   bool isFullFIFOin() const { return (a1_.size() == size_ / 4); }
   bool isFullFIFOout() const { return (a2_.size() == size_ / 4); }
 
   void spliceUpfront(const KeyT &key) {
-    auto eltit = am_hash_.find(key);
-    if (eltit != am_.begin()) am_.splice(am_.begin(), am_, eltit, std::next(eltit));
+    auto eltit = am_hash_.find(key)->second;
+    if (eltit != am_.begin())
+      am_.splice(am_.begin(), am_, eltit, std::next(eltit)); // Move p_elem to the beginning of the am_.
   }
 
   void reclaimForFIFOout(const KeyT &key) {
-    auto eltit = a2_hash_.find(key);
     if (isFullCache()) {
-      am_hash_.erase(am_.back().m_key);
+      am_hash_.erase(am_.end()->m_key);
       am_.pop_back();
     }
-    am_.emplace_front(**eltit);
+    auto   eltit = a2_hash_.find(key)->second;
+    node_t new_page{eltit->m_key, *(eltit->m_ptr)};
+
+    am_.emplace_front(new_page);
     am_hash_.emplace(key, am_.begin());
-    a2_hash_.erase(key);
     a2_.erase(eltit);
+    a2_hash_.erase(key);
   }
   template <typename F> void reclaimForFIFOin(const KeyT &key, F &slow_get_page) {
     if (isFullFIFOin()) {
-      auto page = a1_.back();
       if (isFullFIFOout()) {
-        a2_hash_.erase(a2_.back().m_key);
+        a2_hash_.erase(a2_.end()->m_key);
         a2_.pop_back();
       }
-      a2_.emplace_front(&page);
-      a2_hash_.emplace(page.m_key, a2_.begin());
-      a1_hash_.erase(page.m_key);
+      auto   eltit = a1_.end();
+      node_t new_page{eltit->m_key, &(eltit->m_value)};
+
+      a2_.emplace_front(new_page);
+      a2_hash_.emplace(eltit->m_key, a2_.begin());
+      a1_hash_.erase(eltit->m_key);
       a1_.pop_back();
     }
     a1_.emplace_front(key, slow_get_page(key));
@@ -87,4 +96,4 @@ public:
   }
 };
 
-} // namespace cache
+} // namespace caches

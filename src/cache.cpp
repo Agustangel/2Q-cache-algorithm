@@ -2,6 +2,7 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <vector>
 
 #include "cache.hpp"
 
@@ -19,6 +20,7 @@ int main() {
 
   std::cin >> n >> cache_size;
   assert(std::cin.good());
+  if (cache_size < CACHE_MIN_SIZE) cache_size = CACHE_MIN_SIZE;
 
   std::vector<int> vec{};
   vec.reserve(n);
