@@ -25,7 +25,7 @@ int main() {
   std::vector<int> vec{};
   vec.reserve(n);
 
-  for (unsigned i = 0; i < n; ++i) {
+  for (size_t i = 0; i < n; ++i) {
     int temp{};
     std::cin >> temp;
     assert(std::cin.good());

@@ -18,11 +18,11 @@ enable_testing()
 
 add_executable(
   cache_bin
-  "src/cache.cpp"
+  src/cache.cpp
 )
 add_executable(
   cache_test
-  "tests.cpp"
+  tests/functional_test.cpp
 )
 target_link_libraries(
   cache_test

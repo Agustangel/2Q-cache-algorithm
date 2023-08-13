@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tests.h"
 #include <iterator>
 #include <list>
 #include <unordered_map>
@@ -16,69 +17,89 @@ template <typename KeyT, typename T> struct node_t {
   node_t(KeyT p_key, T p_val) : m_key{p_key}, m_value{p_val} {}
   node_t(KeyT p_key, T *p_ptr = nullptr) : m_key{p_key}, m_ptr{p_ptr} {}
 };
-// TODO: Написать документацию
+
 template <typename KeyT, typename T> class cache_t {
   size_t size_;
 
   using node_t__ = node_t<KeyT, T>;
   using ListIt = typename std::list<node_t__>::iterator;
 
-  // TODO: что если size_ < 4?
-  std::list<node_t__> am_; // max_size = 1/2 * size_
-  std::list<node_t__> a1_; // max_size = 1/4 * size_
-  std::list<node_t__> a2_; // max_size = 1/4 * size_
+  std::list<node_t__> lru_;      // max_size = 1/2 * size_
+  std::list<node_t__> fifo_in_;  // max_size = 1/4 * size_
+  std::list<node_t__> fifo_out_; // max_size = 1/4 * size_
 
-  std::unordered_map<KeyT, ListIt> am_hash_;
-  std::unordered_map<KeyT, ListIt> a1_hash_;
-  std::unordered_map<KeyT, ListIt> a2_hash_;
+  std::unordered_map<KeyT, ListIt> lru_hash_;
+  std::unordered_map<KeyT, ListIt> fifo_in_hash_;
+  std::unordered_map<KeyT, ListIt> fifo_out_hash_;
 
-  bool isFullCache() const { return (am_.size() == size_ / 2); }
-  bool isFullFIFOin() const { return (a1_.size() == size_ / 4); }
-  bool isFullFIFOout() const { return (a2_.size() == size_ / 4); }
+public:
+  bool isFullCache() const { return (lru_.size() == size_ / 2); }
+  bool isFullFIFOin() const { return (fifo_in_.size() == size_ / 4); }
+  bool isFullFIFOout() const { return (fifo_out_.size() == size_ / 4); }
 
+  size_t getSize() const { return size_; }
+  void   dump() const {
+    std::cout << "Cache size: " << size_ << std::endl;
+    std::cout << "content lru_: " << std::endl;
+    for (const auto &elem : lru_) {
+      std::cout << elem.m_value << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "content fifo_in_: " << std::endl;
+    for (const auto &elem : fifo_in_) {
+      std::cout << elem.m_value << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "content fifo_out_: " << std::endl;
+    for (const auto &elem : fifo_out_) {
+      std::cout << *elem.m_ptr << " ";
+    }
+  }
+
+private:
   void spliceUpfront(const KeyT &key) {
-    auto eltit = am_hash_.find(key)->second;
-    if (eltit != am_.begin())
-      am_.splice(am_.begin(), am_, eltit, std::next(eltit)); // Move p_elem to the beginning of the am_.
+    auto eltit = lru_hash_.find(key)->second;
+    if (eltit != lru_.begin()) lru_.splice(lru_.begin(), lru_, eltit, std::next(eltit));
   }
 
   void reclaimForFIFOout(const KeyT &key) {
     if (isFullCache()) {
-      am_hash_.erase(am_.end()->m_key);
-      am_.pop_back();
+      lru_hash_.erase(lru_.end()->m_key);
+      lru_.pop_back();
     }
-    auto   eltit = a2_hash_.find(key)->second;
+    auto   eltit = fifo_out_hash_.find(key)->second;
     node_t new_page{eltit->m_key, *(eltit->m_ptr)};
 
-    am_.emplace_front(new_page);
-    am_hash_.emplace(key, am_.begin());
-    a2_.erase(eltit);
-    a2_hash_.erase(key);
+    lru_.emplace_front(new_page);
+    lru_hash_.emplace(key, lru_.begin());
+    fifo_out_.erase(eltit);
+    fifo_out_hash_.erase(key);
   }
   template <typename F> void reclaimForFIFOin(const KeyT &key, F &slow_get_page) {
     if (isFullFIFOin()) {
       if (isFullFIFOout()) {
-        a2_hash_.erase(a2_.end()->m_key);
-        a2_.pop_back();
+        fifo_out_hash_.erase(fifo_out_.end()->m_key);
+        fifo_out_.pop_back();
       }
-      auto   eltit = a1_.end();
+      auto   eltit = fifo_in_.end();
       node_t new_page{eltit->m_key, &(eltit->m_value)};
 
-      a2_.emplace_front(new_page);
-      a2_hash_.emplace(eltit->m_key, a2_.begin());
-      a1_hash_.erase(eltit->m_key);
-      a1_.pop_back();
+      fifo_out_.emplace_front(new_page);
+      fifo_out_hash_.emplace(eltit->m_key, fifo_out_.begin());
+      fifo_in_hash_.erase(eltit->m_key);
+      fifo_in_.pop_back();
     }
-    a1_.emplace_front(key, slow_get_page(key));
-    a1_hash_.emplace(key, a1_.begin());
+    fifo_in_.emplace_front(key, slow_get_page(key));
+    fifo_in_hash_.emplace(key, fifo_in_.begin());
   }
 
-  bool isPresentAm(const KeyT &key) const { return (am_hash_.find(key) != am_hash_.end()); }
-  bool isPresentA1(const KeyT &key) const { return (a1_hash_.find(key) != a1_hash_.end()); }
-  bool isPresentA2(const KeyT &key) const { return (a2_hash_.find(key) != a2_hash_.end()); }
+  bool isPresentAm(const KeyT &key) const { return (lru_hash_.find(key) != lru_hash_.end()); }
+  bool isPresentA1(const KeyT &key) const { return (fifo_in_hash_.find(key) != fifo_in_hash_.end()); }
+  bool isPresentA2(const KeyT &key) const { return (fifo_out_hash_.find(key) != fifo_out_hash_.end()); }
 
 public:
-  explicit cache_t(size_t size) : am_{}, a1_{}, a2_{}, am_hash_{}, a1_hash_{}, a2_hash_{}, size_(size) {}
+  explicit cache_t(size_t size)
+      : lru_{}, fifo_in_{}, fifo_out_{}, lru_hash_{}, fifo_in_hash_{}, fifo_out_hash_{}, size_(size) {}
 
   template <typename F> bool lookupUpdate(const KeyT &key, F slow_get_page) {
     if (isPresentAm(key)) {
