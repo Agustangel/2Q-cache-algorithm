@@ -56,7 +56,7 @@ TEST(test_1, test_fifo_mode) {
 TEST(test_1, test_m_reqs) {
   std::size_t      cache_sz = 1000, nreqs = 1000000;
   std::vector<int> reqs;
-  for (std::size_t i = 0; i < nreqs; i++) {
+  for (size_t i = 0; i < nreqs; i++) {
     reqs.push_back(std::rand() % cache_sz);
   }
   caches::cache_t<int, int> cache{cache_sz};
