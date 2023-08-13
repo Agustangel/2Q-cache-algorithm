@@ -50,6 +50,7 @@ TEST(test_1, test_fifo_mode) {
   caches::cache_t<int, int> cache{cache_sz};
   caches::slow_get_page_t   slow_get_page{};
   std::size_t               res = cache.countHits(reqs, slow_get_page);
+  ASSERT_EQ(cache.isFullFIFOin(), true);
   ASSERT_EQ(res, ans);
 }
 

@@ -44,8 +44,8 @@ template <typename KeyT, typename T> class cache_t {
   std::unordered_map<KeyT, ListIt> fifo_out_hash_;
 
 public:
-  bool isFullLRU() const { return (lru_.size() == size_ / 2); }
-  bool isFullFIFOin() const { return (fifo_in_.size() == size_ / 4); }
+  bool isFullLRU() const { return (lru_.size() == size_); }
+  bool isFullFIFOin() const { return (fifo_in_.size() == size_ / 2); }
   bool isFullFIFOout() const { return (fifo_out_.size() == size_ / 4); }
 
   size_t getSize() const { return size_; }
@@ -117,7 +117,8 @@ private:
 
 public:
   explicit cache_t(size_t size)
-      : lru_{}, fifo_in_{}, fifo_out_{}, lru_hash_{}, fifo_in_hash_{}, fifo_out_hash_{}, hits_{}, size_(size) {}
+      : lru_{}, fifo_in_{}, fifo_out_{}, lru_hash_{}, fifo_in_hash_{}, fifo_out_hash_{}, hits_{},
+        size_(size < CACHE_MIN_SIZE ? CACHE_MIN_SIZE : size) {}
 
   template <typename F> bool lookupUpdate(const KeyT &key, F &slow_get_page) {
 #ifdef DEBUG
