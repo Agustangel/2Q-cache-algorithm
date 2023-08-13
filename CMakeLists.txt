@@ -22,7 +22,7 @@ add_executable(
 )
 add_executable(
   cache_test
-  tests/functional_test.cpp
+  tests/tests.cpp
 )
 target_link_libraries(
   cache_test

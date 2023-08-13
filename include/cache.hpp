@@ -1,13 +1,24 @@
 #pragma once
 
-#include "tests.h"
+#include <chrono>
+#include <iostream>
 #include <iterator>
 #include <list>
+#include <thread>
 #include <unordered_map>
+#include <vector>
 
 namespace caches {
 
 #define CACHE_MIN_SIZE 4
+
+// slow get page imitation
+struct slow_get_page_t {
+  int operator()(int p_key) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1)); // 0.001c
+    return p_key;
+  }
+};
 
 template <typename KeyT, typename T> struct node_t {
   KeyT m_key;
@@ -19,7 +30,7 @@ template <typename KeyT, typename T> struct node_t {
 };
 
 template <typename KeyT, typename T> class cache_t {
-  size_t size_;
+  std::size_t hits_, size_;
 
   using node_t__ = node_t<KeyT, T>;
   using ListIt = typename std::list<node_t__>::iterator;
@@ -33,23 +44,30 @@ template <typename KeyT, typename T> class cache_t {
   std::unordered_map<KeyT, ListIt> fifo_out_hash_;
 
 public:
-  bool isFullCache() const { return (lru_.size() == size_ / 2); }
+  bool isFullLRU() const { return (lru_.size() == size_ / 2); }
   bool isFullFIFOin() const { return (fifo_in_.size() == size_ / 4); }
   bool isFullFIFOout() const { return (fifo_out_.size() == size_ / 4); }
 
   size_t getSize() const { return size_; }
-  void   dump() const {
+  size_t getLRUSize() const { return lru_.size(); }
+  size_t getFIFOinSize() const { return fifo_in_.size(); }
+  size_t getFIFOoutSize() const { return fifo_out_.size(); }
+
+  void dump() const {
     std::cout << "Cache size: " << size_ << std::endl;
+    std::cout << "LRU size: " << lru_.size() << std::endl;
     std::cout << "content lru_: " << std::endl;
     for (const auto &elem : lru_) {
       std::cout << elem.m_value << " ";
     }
     std::cout << std::endl;
+    std::cout << "FIFOin size: " << fifo_in_.size() << std::endl;
     std::cout << "content fifo_in_: " << std::endl;
     for (const auto &elem : fifo_in_) {
       std::cout << elem.m_value << " ";
     }
     std::cout << std::endl;
+    std::cout << "FIFOout size: " << fifo_out_.size() << std::endl;
     std::cout << "content fifo_out_: " << std::endl;
     for (const auto &elem : fifo_out_) {
       std::cout << *elem.m_ptr << " ";
@@ -63,7 +81,7 @@ private:
   }
 
   void reclaimForFIFOout(const KeyT &key) {
-    if (isFullCache()) {
+    if (isFullLRU()) {
       lru_hash_.erase(lru_.end()->m_key);
       lru_.pop_back();
     }
@@ -99,9 +117,12 @@ private:
 
 public:
   explicit cache_t(size_t size)
-      : lru_{}, fifo_in_{}, fifo_out_{}, lru_hash_{}, fifo_in_hash_{}, fifo_out_hash_{}, size_(size) {}
+      : lru_{}, fifo_in_{}, fifo_out_{}, lru_hash_{}, fifo_in_hash_{}, fifo_out_hash_{}, hits_{}, size_(size) {}
 
-  template <typename F> bool lookupUpdate(const KeyT &key, F slow_get_page) {
+  template <typename F> bool lookupUpdate(const KeyT &key, F &slow_get_page) {
+#ifdef DEBUG
+    dump();
+#endif
     if (isPresentAm(key)) {
       spliceUpfront(key);
       return true;
@@ -114,6 +135,12 @@ public:
       reclaimForFIFOin(key, slow_get_page);
       return false;
     }
+  }
+  template <typename F> std::size_t countHits(std::vector<KeyT> &vec, F &slow_get_page) {
+    for (const auto &elem : vec) {
+      if (lookupUpdate(elem, slow_get_page)) hits_++;
+    }
+    return hits_;
   }
 };
 
