@@ -35,8 +35,8 @@ template <typename KeyT, typename T> class cache_t {
   using node_t__ = node_t<KeyT, T>;
   using ListIt = typename std::list<node_t__>::iterator;
 
-  std::list<node_t__> lru_;      // max_size = 1/2 * size_
-  std::list<node_t__> fifo_in_;  // max_size = 1/4 * size_
+  std::list<node_t__> lru_;      // max_size = size_
+  std::list<node_t__> fifo_in_;  // max_size = 1/2 * size_
   std::list<node_t__> fifo_out_; // max_size = 1/4 * size_
 
   std::unordered_map<KeyT, ListIt> lru_hash_;
@@ -111,12 +111,12 @@ private:
     fifo_in_hash_.emplace(key, fifo_in_.begin());
   }
 
-  bool isPresentAm(const KeyT &key) const { return (lru_hash_.find(key) != lru_hash_.end()); }
-  bool isPresentA1(const KeyT &key) const { return (fifo_in_hash_.find(key) != fifo_in_hash_.end()); }
-  bool isPresentA2(const KeyT &key) const { return (fifo_out_hash_.find(key) != fifo_out_hash_.end()); }
+  bool isPresentLRU(const KeyT &key) const { return (lru_hash_.find(key) != lru_hash_.end()); }
+  bool isPresentFIFOin(const KeyT &key) const { return (fifo_in_hash_.find(key) != fifo_in_hash_.end()); }
+  bool isPresentFIFOout(const KeyT &key) const { return (fifo_out_hash_.find(key) != fifo_out_hash_.end()); }
 
 public:
-  explicit cache_t(size_t size)
+  explicit cache_t(std::size_t size)
       : lru_{}, fifo_in_{}, fifo_out_{}, lru_hash_{}, fifo_in_hash_{}, fifo_out_hash_{}, hits_{},
         size_(size < CACHE_MIN_SIZE ? CACHE_MIN_SIZE : size) {}
 
@@ -124,12 +124,12 @@ public:
 #ifdef DEBUG
     dump();
 #endif
-    if (isPresentAm(key)) {
+    if (isPresentLRU(key)) {
       spliceUpfront(key);
       return true;
-    } else if (isPresentA1(key)) {
+    } else if (isPresentFIFOin(key)) {
       return true;
-    } else if (isPresentA2(key)) {
+    } else if (isPresentFIFOout(key)) {
       reclaimForFIFOout(key);
       return true;
     } else {
