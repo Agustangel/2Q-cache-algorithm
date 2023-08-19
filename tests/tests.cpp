@@ -6,15 +6,15 @@
 
 class CacheFixture : public ::testing::Test {
 public:
-  const size_t               cache_sz = 8;
-  const size_t               nreqs = 10;
+  const std::size_t          cache_sz = 8;
+  const std::size_t          nreqs = 10;
   std::vector<int>           reqs;
   caches::cache_t<int, int> *cache;
   caches::slow_get_page_t    slow_get_page{};
 
 protected:
   void SetUp() override {
-    for (size_t i = 0; i < nreqs; i++) {
+    for (std::size_t i = 0; i < nreqs; i++) {
       reqs.push_back(i * 2);
     }
     cache = new caches::cache_t<int, int>{cache_sz};

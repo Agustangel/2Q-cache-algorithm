@@ -16,6 +16,8 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
+add_definitions(-DDEBUG)
+
 add_executable(
   cache_bin
   src/cache.cpp
@@ -28,6 +30,10 @@ add_executable(
   cache_test
   tests/tests.cpp
 )
+add_executable(
+  ideal_cache_test
+  tests/ideal_tests.cpp
+)
 target_link_libraries(
   cache_test
   GTest::gtest_main
@@ -39,3 +45,4 @@ gtest_discover_tests(cache_test)
 target_include_directories(cache_bin PUBLIC include)
 target_include_directories(ideal_cache_bin PUBLIC include)
 target_include_directories(cache_test PUBLIC include)
+target_include_directories(ideal_cache_test PUBLIC include)

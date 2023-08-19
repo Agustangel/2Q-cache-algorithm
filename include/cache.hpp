@@ -72,6 +72,7 @@ public:
     for (const auto &elem : fifo_out_) {
       std::cout << *elem.m_ptr << " ";
     }
+    std::cout << "====================" << std::endl;
   }
 
 private:
