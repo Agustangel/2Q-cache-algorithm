@@ -22,5 +22,8 @@ int main() {
     vec.push_back(temp);
   }
 
+  caches::ideal_t<int> cache{cache_size, vec.begin(), vec.end()};
+  std::cout << cache.countHits() << std::endl;
+
   return 0;
 }

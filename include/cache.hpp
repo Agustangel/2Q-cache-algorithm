@@ -93,6 +93,7 @@ private:
     fifo_out_.erase(eltit);
     fifo_out_hash_.erase(key);
   }
+
   template <typename F> void reclaimForFIFOin(const KeyT &key, F &slow_get_page) {
     if (isFullFIFOin()) {
       if (isFullFIFOout()) {
@@ -137,6 +138,7 @@ public:
       return false;
     }
   }
+
   template <typename F> std::size_t countHits(std::vector<KeyT> &vec, F &slow_get_page) {
     for (const auto &elem : vec) {
       if (lookupUpdate(elem, slow_get_page)) hits_++;

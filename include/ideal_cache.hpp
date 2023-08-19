@@ -9,28 +9,30 @@
 
 namespace caches {
 
-template <typename T> class ideal_t {
+// slow get page imitation
+struct slow_get_page_t {
+  int operator()(int p_key) { return p_key; }
+};
+
+template <typename T, typename KeyT = int> class ideal_t {
   std::size_t hits_, size_;
 
-  using ListIt = typename std::list<T>::iterator;
+  using node_t = typename std::pair<KeyT, T>;
+  using ListIt = typename std::list<node_t>::iterator;
 
-  std::vector<T>                reqs_;
-  std::map<std::size_t, ListIt> map_;
-  std::list<T>                  cache_;
+  std::vector<KeyT>                reqs_;
+  std::list<node_t>                cache_;
+  std::unordered_map<KeyT, ListIt> hash_;
+  std::map<std::size_t, ListIt>    map_;
 
   bool isFullCache() const { return (cache_.size() == size_); }
+  bool isPresentCache(const KeyT &key) const { return (hash_.find(key) != hash_.end()); }
 
-  void insertElem(const T &elem) {
-    if (isFullCache()) {
-      auto latest_used = findLatestUsed();
-      auto found = map_.find(latest_used)->second;
-      cache_.erase(found);
-      map_.erase(latest_used);
-    }
-    cache_.emplace_front(elem);
-    reqs_.erase(reqs_.begin());
-    map_.emplace(0, cache_.begin()); // fillMap will then correctly fill in the first field
+  void spliceUpfront(const KeyT &key) {
+    auto eltit = hash_.find(key)->second;
+    if (eltit != cache_.begin()) cache_.splice(cache_.begin(), cache_, eltit, std::next(eltit));
   }
+
   std::size_t findLatestUsed() const {
     auto latest_used = map_.begin()->first;
     for (auto its = map_.begin(), ite = map_.end(); its != ite; ++its) {
@@ -41,17 +43,46 @@ template <typename T> class ideal_t {
     return latest_used;
   }
 
+  void eraseLatestUsed() {
+    fillMap();
+    auto latest_used = findLatestUsed();
+    auto found = map_.find(latest_used)->second;
+
+    hash_.erase(found->first);
+    map_.erase(latest_used);
+    cache_.erase(found);
+  }
+
   void fillMap() {
     for (auto its = map_.begin(), ite = map_.end(); its != ite; ++its) {
-      auto        elem = *(its->second);
+      auto        elem_it = its->second;
       std::size_t elem_index{};
       for (std::size_t i = 0, end = reqs_.size(); i != end; ++i) {
-        if (reqs_[i] != elem) elem_index++;
+        if (reqs_[i] != elem_it->first) elem_index++;
       }
-      its->first = elem_index;
+      map_.erase(its);
+      map_.emplace(elem_index, elem_it);
     }
   }
-  void lookupUpdate(const T &elem) {}
+
+  template <typename F> void insertElem(const KeyT &key, F &slow_get_page) {
+    cache_.emplace_front(key, slow_get_page(key));
+    reqs_.erase(reqs_.begin());
+    hash_.emplace(key, cache_.begin());
+    map_.emplace(0, cache_.begin()); // fillMap will then correctly fill in the first field
+  }
+
+  template <typename F> void lookupUpdate(const KeyT &key, F &slow_get_page) {
+    if (isPresentCache(key)) {
+      spliceUpfront(key);
+      hits_++;
+    } else if (!isFullCache()) {
+      insertElem(key, slow_get_page);
+    } else {
+      eraseLatestUsed();
+      insertElem(key, slow_get_page);
+    }
+  }
 
 public:
   template <typename iterator_t>
@@ -60,8 +91,10 @@ public:
   }
 
   std::size_t countHits() {
+    slow_get_page_t g{};
+
     for (const auto &elem : reqs_) {
-      lookupUpdate(elem);
+      lookupUpdate(elem, g);
     }
     return hits_;
   }

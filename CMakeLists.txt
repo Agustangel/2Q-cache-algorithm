@@ -21,6 +21,10 @@ add_executable(
   src/cache.cpp
 )
 add_executable(
+  ideal_cache_bin
+  src/ideal_cache.cpp
+)
+add_executable(
   cache_test
   tests/tests.cpp
 )
@@ -33,4 +37,5 @@ include(GoogleTest)
 gtest_discover_tests(cache_test)
 
 target_include_directories(cache_bin PUBLIC include)
+target_include_directories(ideal_cache_bin PUBLIC include)
 target_include_directories(cache_test PUBLIC include)
