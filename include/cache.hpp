@@ -48,10 +48,10 @@ public:
   bool isFullFIFOin() const { return (fifo_in_.size() == size_ / 2); }
   bool isFullFIFOout() const { return (fifo_out_.size() == size_ / 4); }
 
-  size_t getSize() const { return size_; }
-  size_t getLRUSize() const { return lru_.size(); }
-  size_t getFIFOinSize() const { return fifo_in_.size(); }
-  size_t getFIFOoutSize() const { return fifo_out_.size(); }
+  std::size_t getSize() const { return size_; }
+  std::size_t getLRUSize() const { return lru_.size(); }
+  std::size_t getFIFOinSize() const { return fifo_in_.size(); }
+  std::size_t getFIFOoutSize() const { return fifo_out_.size(); }
 
   void dump() const {
     std::cout << "Cache size: " << size_ << std::endl;

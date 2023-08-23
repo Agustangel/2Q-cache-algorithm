@@ -5,7 +5,6 @@
 #include "ideal_cache.hpp"
 
 int main() {
-  int         hits{};
   std::size_t n{}, cache_size{};
 
   std::cin >> n >> cache_size;
@@ -23,7 +22,9 @@ int main() {
   }
 
   caches::ideal_t<int> cache{cache_size, vec.begin(), vec.end()};
-  std::cout << cache.countHits() << std::endl;
+
+  int res = cache.countHits();
+  std::cout << res << std::endl;
 
   return 0;
 }

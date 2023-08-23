@@ -38,9 +38,14 @@ target_link_libraries(
   cache_test
   GTest::gtest_main
 )
+target_link_libraries(
+  ideal_cache_test
+  GTest::gtest_main
+)
 
 include(GoogleTest)
 gtest_discover_tests(cache_test)
+gtest_discover_tests(ideal_cache_test)
 
 target_include_directories(cache_bin PUBLIC include)
 target_include_directories(ideal_cache_bin PUBLIC include)
