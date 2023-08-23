@@ -6,7 +6,7 @@
 
 ### Linux
 ```sh
-makedir build-debug
+mkdir build-debug
 cmake -B build-debug/ -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-debug/
 # Build in release preset
